@@ -1,94 +1,120 @@
-import { baseApi } from "@/lib/api-base"
-import type { CheckoutRequest, Transaction } from "./types"
-import { MOCK_TRANSACTIONS, MOCK_PRODUCTS } from "@/lib/mock-data"
-
-// Mock transactions state
-const mockTransactions = [...MOCK_TRANSACTIONS]
-
-// Mock transactions logic
-const mockTransactionService = {
-  checkout: async (request: CheckoutRequest): Promise<Transaction> => {
-    await new Promise((resolve) => setTimeout(resolve, 1500)) // Simulate payment processing
-
-    // Calculate totals
-    const items = request.items.map((item) => {
-      const product = MOCK_PRODUCTS.find((p) => p.id === item.productId)
-      if (!product) {
-        throw new Error(`Product ${item.productId} not found`)
-      }
-
-      const price = product.discountedPrice || product.price
-      return {
-        productId: item.productId,
-        quantity: item.quantity,
-        price,
-      }
-    })
-
-    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-    const discountAmount = request.discountAmount || 0
-    const total = subtotal - discountAmount
-
-    // Create new transaction
-    const newTransaction: Transaction = {
-      id: `txn-${Date.now()}`,
-      userId: request.userId || "user1",
-      items,
-      subtotal: Math.round(subtotal * 100) / 100,
-      discountAmount: Math.round(discountAmount * 100) / 100,
-      total: Math.round(total * 100) / 100,
-      status: "completed",
-      paymentMethod: request.paymentMethod,
-      shippingAddress: request.shippingAddress,
-      billingAddress: request.billingAddress,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }
-
-    mockTransactions.unshift(newTransaction) // Add to beginning for newest first
-    return newTransaction
-  },
-
-  getTransactions: async (): Promise<Transaction[]> => {
-    await new Promise((resolve) => setTimeout(resolve, 700))
-
-    // Return transactions sorted by newest first
-    return [...mockTransactions].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  },
-}
+import { baseApi } from "@/lib/api-base";
+import type { CheckoutRequest, Transaction } from "./types";
 
 export const transactionsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     checkout: builder.mutation<Transaction, CheckoutRequest>({
-      queryFn: async (request) => {
-        try {
-          const data = await mockTransactionService.checkout(request)
-          return { data }
-        } catch (error) {
-          return {
-            error: { status: 400, data: { message: error instanceof Error ? error.message : "Checkout failed" } },
-          }
-        }
-      },
+      query: (request) => ({
+        url: "checkout/process",
+        method: "POST",
+        body: request,
+        headers: {
+          // Add authorization header for authenticated requests
+          Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+        },
+      }),
+      transformResponse: (response: any) => ({
+        ...response,
+        id: response._id || response.id,
+        createdAt: response.createdAt || new Date().toISOString(),
+        updatedAt: response.updatedAt || new Date().toISOString(),
+      }),
       invalidatesTags: ["Cart", "Transaction"],
     }),
     getTransactions: builder.query<Transaction[], void>({
-      queryFn: async () => {
-        try {
-          const data = await mockTransactionService.getTransactions()
-          return { data }
-        } catch (error) {
-          return {
-            error: {
-              status: 500,
-              data: { message: error instanceof Error ? error.message : "Failed to fetch transactions" },
-            },
-          }
-        }
+      query: () => ({
+        url: "orders",
+        headers: {
+          // Add authorization header for authenticated requests
+          Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+        },
+      }),
+      transformResponse: (response: any[]) => {
+        // Transform backend format to frontend format
+        return response.map((transaction) => ({
+          ...transaction,
+          id: transaction._id || transaction.id,
+          createdAt: transaction.createdAt || new Date().toISOString(),
+          updatedAt: transaction.updatedAt || new Date().toISOString(),
+        }));
       },
       providesTags: ["Transaction"],
     }),
+    getTransaction: builder.query<Transaction, string>({
+      query: (id) => ({
+        url: `orders/${id}`,
+        headers: {
+          // Add authorization header for authenticated requests
+          Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+        },
+      }),
+      transformResponse: (response: any) => ({
+        ...response,
+        id: response._id || response.id,
+        createdAt: response.createdAt || new Date().toISOString(),
+        updatedAt: response.updatedAt || new Date().toISOString(),
+      }),
+      providesTags: (result, error, id) => [{ type: "Transaction", id }],
+    }),
+    cancelOrder: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `orders/${id}/cancel`,
+        method: "POST",
+        headers: {
+          // Add authorization header for authenticated requests
+          Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+        },
+      }),
+      invalidatesTags: (result, error, id) => [{ type: "Transaction", id }],
+    }),
+    getOrderReceipt: builder.query<any, string>({
+      query: (id) => ({
+        url: `orders/${id}/receipt`,
+        headers: {
+          // Add authorization header for authenticated requests
+          Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+        },
+      }),
+      providesTags: (result, error, id) => [{ type: "Transaction", id }],
+    }),
+    refundOrder: builder.mutation<
+      void,
+      { id: string; reason?: string; amount?: number }
+    >({
+      query: ({ id, ...data }) => ({
+        url: `orders/${id}/refund`,
+        method: "POST",
+        body: data,
+        headers: {
+          // Add authorization header for authenticated requests
+          Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+        },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: "Transaction", id }],
+    }),
+    validateCheckout: builder.mutation<
+      { valid: boolean; errors?: string[] },
+      CheckoutRequest
+    >({
+      query: (request) => ({
+        url: "checkout/validate",
+        method: "POST",
+        body: request,
+        headers: {
+          // Add authorization header for authenticated requests
+          Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+        },
+      }),
+    }),
   }),
-})
+});
 
-export const { useCheckoutMutation, useGetTransactionsQuery } = transactionsApi
+export const {
+  useCheckoutMutation,
+  useGetTransactionsQuery,
+  useGetTransactionQuery,
+  useCancelOrderMutation,
+  useGetOrderReceiptQuery,
+  useRefundOrderMutation,
+  useValidateCheckoutMutation,
+} = transactionsApi;

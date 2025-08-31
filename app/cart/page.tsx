@@ -1,88 +1,107 @@
-"use client"
+"use client";
 
-import { useGetCartQuery, useUpdateCartItemMutation, useRemoveFromCartMutation } from "@/features/cart/api"
-import { useApplyDiscountMutation } from "@/features/discounts/api"
-import { RouteGuard } from "@/components/auth/route-guard"
-import { BreadcrumbNav } from "@/components/layout/breadcrumb-nav"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/hooks/use-toast"
-import { ShoppingCart, Plus, Minus, Trash2, Tag, CreditCard } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
-import Image from "next/image"
+import {
+  useGetCartQuery,
+  useUpdateCartItemMutation,
+  useRemoveFromCartMutation,
+} from "@/features/cart/api";
+import { useApplyDiscountMutation } from "@/features/discounts/api";
+import { RouteGuard } from "@/components/auth/route-guard";
+import { BreadcrumbNav } from "@/components/layout/breadcrumb-nav";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import {
+  ShoppingCart,
+  Plus,
+  Minus,
+  Trash2,
+  Tag,
+  CreditCard,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import Image from "next/image";
+import { formatPrice } from "@/lib/utils";
+import { calculateCartTotals } from "@/lib/cart-utils";
 
 export default function CartPage() {
-  const router = useRouter()
-  const { data: cart, isLoading } = useGetCartQuery()
-  const [updateCartItem] = useUpdateCartItemMutation()
-  const [removeFromCart] = useRemoveFromCartMutation()
-  const [applyDiscount] = useApplyDiscountMutation()
-  const { toast } = useToast()
-  const [discountCode, setDiscountCode] = useState("")
-  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false)
+  const router = useRouter();
+  const { data: cart, isLoading } = useGetCartQuery();
+  const [updateCartItem] = useUpdateCartItemMutation();
+  const [removeFromCart] = useRemoveFromCartMutation();
+  const [applyDiscount] = useApplyDiscountMutation();
+  const { toast } = useToast();
+  const [discountCode, setDiscountCode] = useState("");
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
 
   const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
-      handleRemoveItem(itemId)
-      return
+      handleRemoveItem(itemId);
+      return;
     }
 
     try {
-      await updateCartItem({ id: itemId, quantity: newQuantity }).unwrap()
+      await updateCartItem({ id: itemId, quantity: newQuantity }).unwrap();
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update item quantity.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleRemoveItem = async (itemId: string) => {
     try {
-      await removeFromCart(itemId).unwrap()
+      await removeFromCart(itemId).unwrap();
       toast({
         title: "Item removed",
         description: "Item has been removed from your cart.",
-      })
+      });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to remove item from cart.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleApplyDiscount = async () => {
-    if (!discountCode.trim() || !cart) return
+    if (!discountCode.trim() || !cart) return;
 
-    setIsApplyingDiscount(true)
+    setIsApplyingDiscount(true);
     try {
       await applyDiscount({
         code: discountCode,
         cartId: cart.id,
-      }).unwrap()
+      }).unwrap();
 
       toast({
         title: "Discount applied",
         description: "Your discount code has been applied successfully.",
-      })
-      setDiscountCode("")
+      });
+      setDiscountCode("");
     } catch (error) {
       toast({
         title: "Invalid discount code",
-        description: "The discount code you entered is not valid or has expired.",
+        description:
+          "The discount code you entered is not valid or has expired.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsApplyingDiscount(false)
+      setIsApplyingDiscount(false);
     }
-  }
+  };
+
+  // Calculate cart totals
+  const cartTotals = cart
+    ? calculateCartTotals(cart)
+    : { subtotal: 0, tax: 0, total: 0 };
 
   return (
     <RouteGuard requireAuth>
@@ -102,8 +121,12 @@ export default function CartPage() {
           <div className="text-center py-12">
             <ShoppingCart className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h2 className="text-2xl font-semibold mb-2">Your cart is empty</h2>
-            <p className="text-muted-foreground mb-6">Add some products to get started!</p>
-            <Button onClick={() => router.push("/catalog")}>Continue Shopping</Button>
+            <p className="text-muted-foreground mb-6">
+              Add some products to get started!
+            </p>
+            <Button onClick={() => router.push("/catalog")}>
+              Continue Shopping
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -117,7 +140,9 @@ export default function CartPage() {
                         <Image
                           src={
                             item.product.imageUrl ||
-                            `/placeholder.svg?height=96&width=96&query=${encodeURIComponent(item.product.title)}`
+                            `/placeholder.svg?height=96&width=96&query=${encodeURIComponent(
+                              item.product.title
+                            )}`
                           }
                           alt={item.product.title}
                           fill
@@ -126,9 +151,12 @@ export default function CartPage() {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg line-clamp-2">{item.product.title}</h3>
-                        <p className="text-muted-foreground">Product ID: {item.product.id}</p>
-                        <p className="text-lg font-bold mt-2">${item.product.price.toFixed(2)}</p>
+                        <h3 className="font-semibold text-lg line-clamp-2">
+                          {item.product.title}
+                        </h3>
+                        <p className="text-lg font-bold mt-2">
+                          {formatPrice(item.product.price)}
+                        </p>
                       </div>
 
                       <div className="flex items-center space-x-3">
@@ -136,17 +164,24 @@ export default function CartPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                            onClick={() =>
+                              handleQuantityChange(item.id, item.quantity - 1)
+                            }
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
-                          <Badge variant="secondary" className="min-w-[3rem] text-center py-2">
+                          <Badge
+                            variant="secondary"
+                            className="min-w-[3rem] text-center py-2"
+                          >
                             {item.quantity}
                           </Badge>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                            onClick={() =>
+                              handleQuantityChange(item.id, item.quantity + 1)
+                            }
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
@@ -184,7 +219,10 @@ export default function CartPage() {
                       value={discountCode}
                       onChange={(e) => setDiscountCode(e.target.value)}
                     />
-                    <Button onClick={handleApplyDiscount} disabled={!discountCode.trim() || isApplyingDiscount}>
+                    <Button
+                      onClick={handleApplyDiscount}
+                      disabled={!discountCode.trim() || isApplyingDiscount}
+                    >
                       {isApplyingDiscount ? "Applying..." : "Apply"}
                     </Button>
                   </div>
@@ -200,31 +238,41 @@ export default function CartPage() {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Subtotal</span>
-                      <span>${cart.subtotal?.toFixed(2) || "0.00"}</span>
+                      <span>{formatPrice(cartTotals.subtotal)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Tax</span>
-                      <span>${cart.tax?.toFixed(2) || "0.00"}</span>
+                      <span>{formatPrice(cartTotals?.tax)}</span>
                     </div>
                     {cart.discountAmount && (
                       <div className="flex justify-between text-green-600">
                         <span>Discount</span>
-                        <span>-${cart.discountAmount.toFixed(2)}</span>
+                        <span>-{formatPrice(cart.discountAmount)}</span>
                       </div>
                     )}
                     <Separator />
                     <div className="flex justify-between text-lg font-semibold">
                       <span>Total</span>
-                      <span>${cart.total?.toFixed(2) || "0.00"}</span>
+                      <span>
+                        {formatPrice(cart.total || cart.subtotal || 0)}
+                      </span>
                     </div>
                   </div>
 
-                  <Button onClick={() => router.push("/checkout")} className="w-full" size="lg">
+                  <Button
+                    onClick={() => router.push("/checkout")}
+                    className="w-full"
+                    size="lg"
+                  >
                     <CreditCard className="h-5 w-5 mr-2" />
                     Proceed to Checkout
                   </Button>
 
-                  <Button variant="outline" onClick={() => router.push("/catalog")} className="w-full">
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push("/catalog")}
+                    className="w-full"
+                  >
                     Continue Shopping
                   </Button>
                 </CardContent>
@@ -234,5 +282,5 @@ export default function CartPage() {
         )}
       </div>
     </RouteGuard>
-  )
+  );
 }

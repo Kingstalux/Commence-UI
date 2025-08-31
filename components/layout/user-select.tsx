@@ -1,84 +1,87 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useDispatch } from "react-redux"
-import { useGetMeQuery } from "@/features/auth/api"
-import { setUser, clearUser } from "@/features/auth/slice"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Users } from "lucide-react"
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useGetMeQuery } from "@/features/auth/api";
+import { setUser } from "@/features/auth/slice";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Shield, User } from "lucide-react";
+import type { RootState } from "@/lib/store";
 
-// Demo users for switching context
-const demoUsers = [
+const roles = [
   {
-    id: "user-1",
-    name: "John Doe",
-    email: "john@example.com",
-    role: "USER" as const,
-    avatarUrl: "/diverse-user-avatars.png",
+    id: "USER",
+    name: "User",
+    icon: User,
+    description: "Standard user access",
   },
   {
-    id: "admin-1",
-    name: "Admin User",
-    email: "admin@example.com",
-    role: "ADMIN" as const,
-    avatarUrl: "/admin-avatar.png",
+    id: "ADMIN",
+    name: "Admin",
+    icon: Shield,
+    description: "Administrative access",
   },
-  {
-    id: "user-2",
-    name: "Jane Smith",
-    email: "jane@example.com",
-    role: "USER" as const,
-    avatarUrl: "/diverse-user-avatar-set-2.png",
-  },
-]
+];
 
-export function UserSelect() {
-  const dispatch = useDispatch()
-  const { data: currentUser } = useGetMeQuery()
-  const [selectedUserId, setSelectedUserId] = useState(currentUser?.id || "")
+export function RoleSelect() {
+  const dispatch = useDispatch();
+  const { data: currentUser } = useGetMeQuery();
+  const currentUserFromState = useSelector(
+    (state: RootState) => state.auth.user
+  );
 
-  const handleUserChange = (userId: string) => {
-    setSelectedUserId(userId)
-    const selectedUser = demoUsers.find((user) => user.id === userId)
+  // Only show role switcher if the user's original role is ADMIN
+  const canSwitchRoles =
+    currentUser?.role === "ADMIN" || currentUserFromState?.role === "ADMIN";
 
-    if (selectedUser) {
-      // In a real app, this would trigger a new API call to switch user context
-      dispatch(setUser(selectedUser))
-      // Trigger refetch of user data
-      // refetch()
-    } else {
-      dispatch(clearUser())
-    }
+  if (!canSwitchRoles) {
+    return null;
   }
+
+  const [selectedRole, setSelectedRole] = useState(
+    currentUserFromState?.role || currentUser?.role || "USER"
+  );
+
+  const handleRoleChange = (roleId: string) => {
+    setSelectedRole(roleId);
+
+    if (currentUser) {
+      // Update user with new role
+      dispatch(
+        setUser({
+          ...currentUser,
+          role: roleId as "USER" | "ADMIN",
+        })
+      );
+    }
+  };
 
   return (
     <div className="flex items-center space-x-2">
-      <Users className="h-3 w-3 text-muted-foreground" />
-      <Select value={selectedUserId} onValueChange={handleUserChange}>
-        <SelectTrigger className="w-32 h-7 text-xs">
-          <SelectValue placeholder="Switch user" />
+      <Select value={selectedRole} onValueChange={handleRoleChange}>
+        <SelectTrigger className="w-28 h-7 text-xs">
+          <SelectValue placeholder="Role" />
         </SelectTrigger>
         <SelectContent>
-          {demoUsers.map((user) => (
-            <SelectItem key={user.id} value={user.id}>
-              <div className="flex items-center space-x-2">
-                <Avatar className="h-4 w-4">
-                  <AvatarImage src={user.avatarUrl || "/placeholder.svg"} alt={user.name} />
-                  <AvatarFallback className="text-xs">
-                    {user.name
-                      .split(" ")
-                      .map((n) => n[0])
-                      .join("")}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-xs">{user.name}</span>
-                {user.role === "ADMIN" && <span className="text-xs text-primary">(Admin)</span>}
-              </div>
-            </SelectItem>
-          ))}
+          {roles.map((role) => {
+            const Icon = role.icon;
+            return (
+              <SelectItem key={role.id} value={role.id}>
+                <div className="flex items-center space-x-2">
+                  <Icon className="h-3 w-3" />
+                  <span className="text-xs">{role.name}</span>
+                </div>
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
     </div>
-  )
+  );
 }

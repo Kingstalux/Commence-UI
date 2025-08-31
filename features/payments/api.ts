@@ -1,113 +1,162 @@
-import { baseApi } from "@/lib/api-base"
-import type { PaymentMethod, CreatePaymentMethodRequest, CheckoutRequest, CheckoutResponse } from "./types"
+import { baseApi } from "@/lib/api-base";
+import type {
+  PaymentMethod,
+  CreatePaymentMethodRequest,
+  CheckoutRequest,
+  CheckoutResponse,
+} from "./types";
 
-// Mock payment methods data
-const mockPaymentMethods: PaymentMethod[] = [
-  {
-    id: "1",
-    type: "credit_card",
-    cardholderName: "John Doe",
-    last4: "4242",
-    brand: "Visa",
-    expiryDate: "12/25",
-    isDefault: true,
-    createdAt: "2024-01-15T10:00:00Z",
-  },
-  {
-    id: "2",
-    type: "credit_card",
-    cardholderName: "John Doe",
-    last4: "5555",
-    brand: "Mastercard",
-    expiryDate: "08/26",
-    isDefault: false,
-    createdAt: "2024-02-10T14:30:00Z",
-  },
-]
+// Utility function to detect card brand from card number
+const detectCardBrand = (cardNumber: string): string => {
+  if (!cardNumber) return "Unknown";
+
+  // Remove spaces and non-digits
+  const cleanNumber = cardNumber.replace(/\D/g, "");
+
+  // Visa: starts with 4
+  if (/^4/.test(cleanNumber)) {
+    return "Visa";
+  }
+
+  // Mastercard: starts with 5 or 2221-2720
+  if (
+    /^5[1-5]/.test(cleanNumber) ||
+    /^2(22[1-9]|2[3-9]|[3-6]|7[01]|720)/.test(cleanNumber)
+  ) {
+    return "Mastercard";
+  }
+
+  // American Express: starts with 34 or 37
+  if (/^3[47]/.test(cleanNumber)) {
+    return "American Express";
+  }
+
+  // Discover: starts with 6011, 622126-622925, 644-649, or 65
+  if (
+    /^6011|^622(12[6-9]|1[3-9]|[2-8]|9[01]|92[0-5])|^64[4-9]|^65/.test(
+      cleanNumber
+    )
+  ) {
+    return "Discover";
+  }
+
+  // Diners Club: starts with 300-305, 36, or 38
+  if (/^3(0[0-5]|[68])/.test(cleanNumber)) {
+    return "Diners Club";
+  }
+
+  // JCB: starts with 35
+  if (/^35/.test(cleanNumber)) {
+    return "JCB";
+  }
+
+  return "Unknown";
+};
 
 export const paymentsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getPaymentMethods: builder.query<PaymentMethod[], void>({
-      queryFn: async () => {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 500))
-        return { data: mockPaymentMethods }
+      query: () => ({
+        url: "users/payment-methods",
+        method: "GET",
+      }),
+      transformResponse: (response: any[]) => {
+        return response.map((paymentMethod) => ({
+          ...paymentMethod,
+          id: paymentMethod._id || paymentMethod.id,
+          brand: paymentMethod.brand || "Unknown",
+          expiryDate:
+            paymentMethod.expiryMonth && paymentMethod.expiryYear
+              ? `${paymentMethod.expiryMonth
+                  .toString()
+                  .padStart(2, "0")}/${paymentMethod.expiryYear
+                  .toString()
+                  .slice(-2)}`
+              : paymentMethod.expiryDate,
+          createdAt: paymentMethod.createdAt || new Date().toISOString(),
+        }));
       },
       providesTags: ["PaymentMethod"],
     }),
 
-    createPaymentMethod: builder.mutation<PaymentMethod, CreatePaymentMethodRequest>({
-      queryFn: async (newPaymentMethod) => {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 800))
+    createPaymentMethod: builder.mutation<
+      PaymentMethod,
+      CreatePaymentMethodRequest
+    >({
+      query: (newPaymentMethod) => {
+        // Extract expiry month and year from expiryDate (MM/YY format)
+        const [expiryMonth, expiryYear] =
+          newPaymentMethod.expiryDate?.split("/") || [];
 
-        const paymentMethod: PaymentMethod = {
-          id: Date.now().toString(),
-          ...newPaymentMethod,
-          last4: newPaymentMethod.cardNumber?.slice(-4) || "",
-          brand: newPaymentMethod.cardNumber?.startsWith("4") ? "Visa" : "Mastercard",
-          createdAt: new Date().toISOString(),
-        }
+        const detectedBrand = detectCardBrand(
+          newPaymentMethod.cardNumber || ""
+        );
+        console.log("Card brand detection:", {
+          cardNumber: newPaymentMethod.cardNumber,
+          detectedBrand,
+        });
 
-        mockPaymentMethods.push(paymentMethod)
-        return { data: paymentMethod }
+        return {
+          url: "users/payment-methods",
+          method: "POST",
+          body: {
+            type:
+              newPaymentMethod.type === "credit_card" ||
+              newPaymentMethod.type === "debit_card"
+                ? "card"
+                : newPaymentMethod.type,
+            cardholderName: newPaymentMethod.cardholderName,
+            last4: newPaymentMethod.cardNumber?.slice(-4) || "",
+            brand: detectedBrand,
+            expiryMonth: expiryMonth ? parseInt(expiryMonth) : undefined,
+            expiryYear: expiryYear ? parseInt(`20${expiryYear}`) : undefined,
+            isDefault: newPaymentMethod.isDefault,
+            token: `tok_${Date.now()}`, // In real app, this would come from payment processor
+          },
+        };
       },
+      transformResponse: (response: any) => ({
+        ...response,
+        id: response._id || response.id,
+        type: response.type === "card" ? "credit_card" : response.type,
+        brand: response.brand || "Unknown",
+        expiryDate:
+          response.expiryMonth && response.expiryYear
+            ? `${response.expiryMonth
+                .toString()
+                .padStart(2, "0")}/${response.expiryYear.toString().slice(-2)}`
+            : undefined,
+        createdAt: response.createdAt || new Date().toISOString(),
+      }),
       invalidatesTags: ["PaymentMethod"],
     }),
 
     deletePaymentMethod: builder.mutation<void, string>({
-      queryFn: async (id) => {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 500))
-
-        const index = mockPaymentMethods.findIndex((pm) => pm.id === id)
-        if (index > -1) {
-          mockPaymentMethods.splice(index, 1)
-        }
-
-        return { data: undefined }
-      },
+      query: (id) => ({
+        url: `users/payment-methods/${id}`,
+        method: "DELETE",
+      }),
       invalidatesTags: ["PaymentMethod"],
     }),
 
     setDefaultPaymentMethod: builder.mutation<void, string>({
-      queryFn: async (id) => {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 500))
-
-        // Set all to non-default first
-        mockPaymentMethods.forEach((pm) => (pm.isDefault = false))
-
-        // Set the selected one as default
-        const paymentMethod = mockPaymentMethods.find((pm) => pm.id === id)
-        if (paymentMethod) {
-          paymentMethod.isDefault = true
-        }
-
-        return { data: undefined }
-      },
+      query: (id) => ({
+        url: `users/payment-methods/${id}/default`,
+        method: "PUT",
+      }),
       invalidatesTags: ["PaymentMethod"],
     }),
 
     processCheckout: builder.mutation<CheckoutResponse, CheckoutRequest>({
-      queryFn: async (checkoutData) => {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-
-        // Simulate successful checkout
-        const response: CheckoutResponse = {
-          orderId: `ORD-${Date.now()}`,
-          status: "success",
-          message: "Your order has been placed successfully!",
-          estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
-          trackingNumber: `TRK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-        }
-
-        return { data: response }
-      },
+      query: (checkoutData) => ({
+        url: "orders/checkout",
+        method: "POST",
+        body: checkoutData,
+      }),
+      invalidatesTags: ["Cart"], // This will refresh the cart after checkout
     }),
   }),
-})
+});
 
 export const {
   useGetPaymentMethodsQuery,
@@ -115,4 +164,4 @@ export const {
   useDeletePaymentMethodMutation,
   useSetDefaultPaymentMethodMutation,
   useProcessCheckoutMutation,
-} = paymentsApi
+} = paymentsApi;

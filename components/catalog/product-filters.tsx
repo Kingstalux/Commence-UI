@@ -1,49 +1,79 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import type { ProductFilters } from "@/features/products/types"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Slider } from "@/components/ui/slider"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Filter, X } from "lucide-react"
+import { useState } from "react";
+import type { ProductFilters } from "@/features/products/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Filter, X } from "lucide-react";
 
 interface ProductFiltersProps {
-  filters: ProductFilters
-  onFiltersChange: (filters: ProductFilters) => void
-  onClearFilters: () => void
+  filters: ProductFilters;
+  onFiltersChange: (filters: ProductFilters) => void;
+  onClearFilters: () => void;
 }
 
-const categories = ["Electronics", "Clothing", "Home & Garden", "Sports", "Books", "Beauty", "Toys", "Automotive"]
+const categories = [
+  "Electronics",
+  "Clothing",
+  "Home & Garden",
+  "Sports",
+  "Books",
+  "Beauty",
+  "Toys",
+  "Automotive",
+];
 
-export function ProductFiltersComponent({ filters, onFiltersChange, onClearFilters }: ProductFiltersProps) {
-  const [priceRange, setPriceRange] = useState([filters.minPrice || 0, filters.maxPrice || 1000])
+export function ProductFiltersComponent({
+  filters,
+  onFiltersChange,
+  onClearFilters,
+}: ProductFiltersProps) {
+  const [priceRange, setPriceRange] = useState([
+    filters.minPrice || 0,
+    filters.maxPrice || 250000,
+  ]);
 
   const handleSearchChange = (search: string) => {
-    onFiltersChange({ ...filters, search: search || undefined })
-  }
+    onFiltersChange({ ...filters, search: search || undefined });
+  };
 
   const handleCategoryChange = (category: string) => {
-    onFiltersChange({ ...filters, category: category === "all" ? undefined : category })
-  }
+    onFiltersChange({
+      ...filters,
+      category: category === "all" ? undefined : category,
+    });
+  };
 
   const handleInStockChange = (checked: boolean) => {
-    onFiltersChange({ ...filters, inStock: checked ? true : undefined })
-  }
+    onFiltersChange({ ...filters, inStock: checked ? true : undefined });
+  };
 
   const handlePriceRangeChange = (values: number[]) => {
-    setPriceRange(values)
+    setPriceRange(values);
     onFiltersChange({
       ...filters,
       minPrice: values[0] > 0 ? values[0] : undefined,
-      maxPrice: values[1] < 1000 ? values[1] : undefined,
-    })
-  }
+      maxPrice: values[1] < 250000 ? values[1] : undefined,
+    });
+  };
 
-  const hasActiveFilters = filters.search || filters.category || filters.inStock || filters.minPrice || filters.maxPrice
+  const hasActiveFilters =
+    filters.search ||
+    filters.category ||
+    filters.inStock ||
+    filters.minPrice ||
+    filters.maxPrice;
 
   return (
     <Card className="sticky top-12">
@@ -80,7 +110,10 @@ export function ProductFiltersComponent({ filters, onFiltersChange, onClearFilte
         {/* Category */}
         <div className="space-y-2">
           <Label>Category</Label>
-          <Select value={filters.category || "all"} onValueChange={handleCategoryChange}>
+          <Select
+            value={filters.category || "all"}
+            onValueChange={handleCategoryChange}
+          >
             <SelectTrigger>
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
@@ -102,26 +135,30 @@ export function ProductFiltersComponent({ filters, onFiltersChange, onClearFilte
             <Slider
               value={priceRange}
               onValueChange={handlePriceRangeChange}
-              max={1000}
+              max={250000}
               min={0}
-              step={10}
+              step={10000}
               className="w-full"
             />
           </div>
           <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <span>${priceRange[0]}</span>
-            <span>${priceRange[1]}</span>
+            <span>{priceRange[0]} FCFA</span>
+            <span>{priceRange[1]} FCFA</span>
           </div>
         </div>
 
         {/* In Stock */}
         <div className="flex items-center space-x-2">
-          <Checkbox id="inStock" checked={filters.inStock || false} onCheckedChange={handleInStockChange} />
+          <Checkbox
+            id="inStock"
+            checked={filters.inStock || false}
+            onCheckedChange={handleInStockChange}
+          />
           <Label htmlFor="inStock" className="text-sm">
             In Stock Only
           </Label>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

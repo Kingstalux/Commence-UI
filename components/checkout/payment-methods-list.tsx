@@ -1,20 +1,20 @@
-"use client"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+"use client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   useGetPaymentMethodsQuery,
   useDeletePaymentMethodMutation,
   useSetDefaultPaymentMethodMutation,
-} from "@/features/payments/api"
-import { useToast } from "@/hooks/use-toast"
-import { CreditCard, Trash2, Star } from "lucide-react"
-import type { PaymentMethod } from "@/features/payments/types"
+} from "@/features/payments/api";
+import { useToast } from "@/hooks/use-toast";
+import { CreditCard, Trash2, Star } from "lucide-react";
+import type { PaymentMethod } from "@/features/payments/types";
 
 interface PaymentMethodsListProps {
-  selectedPaymentMethodId?: string
-  onSelectPaymentMethod?: (paymentMethod: PaymentMethod) => void
-  showSelection?: boolean
+  selectedPaymentMethodId?: string;
+  onSelectPaymentMethod?: (paymentMethod: PaymentMethod) => void;
+  showSelection?: boolean;
 }
 
 export function PaymentMethodsList({
@@ -22,45 +22,45 @@ export function PaymentMethodsList({
   onSelectPaymentMethod,
   showSelection = false,
 }: PaymentMethodsListProps) {
-  const { data: paymentMethods = [], isLoading } = useGetPaymentMethodsQuery()
-  const [deletePaymentMethod] = useDeletePaymentMethodMutation()
-  const [setDefaultPaymentMethod] = useSetDefaultPaymentMethodMutation()
-  const { toast } = useToast()
+  const { data: paymentMethods = [], isLoading } = useGetPaymentMethodsQuery();
+  const [deletePaymentMethod] = useDeletePaymentMethodMutation();
+  const [setDefaultPaymentMethod] = useSetDefaultPaymentMethodMutation();
+  const { toast } = useToast();
 
   const handleDelete = async (id: string) => {
     try {
-      await deletePaymentMethod(id).unwrap()
+      await deletePaymentMethod(id).unwrap();
       toast({
         title: "Payment method deleted",
         description: "The payment method has been removed.",
-      })
+      });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to delete payment method.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleSetDefault = async (id: string) => {
     try {
-      await setDefaultPaymentMethod(id).unwrap()
+      await setDefaultPaymentMethod(id).unwrap();
       toast({
         title: "Default payment method updated",
         description: "Your default payment method has been changed.",
-      })
+      });
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update default payment method.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   if (isLoading) {
-    return <div className="text-center py-4">Loading payment methods...</div>
+    return <div className="text-center py-4">Loading payment methods...</div>;
   }
 
   if (paymentMethods.length === 0) {
@@ -71,7 +71,7 @@ export function PaymentMethodsList({
           <p className="text-muted-foreground">No payment methods added yet.</p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -80,9 +80,13 @@ export function PaymentMethodsList({
         <Card
           key={paymentMethod.id}
           className={`cursor-pointer transition-colors ${
-            showSelection && selectedPaymentMethodId === paymentMethod.id ? "ring-2 ring-primary" : ""
+            showSelection && selectedPaymentMethodId === paymentMethod.id
+              ? "ring-2 ring-primary"
+              : ""
           }`}
-          onClick={() => showSelection && onSelectPaymentMethod?.(paymentMethod)}
+          onClick={() =>
+            showSelection && onSelectPaymentMethod?.(paymentMethod)
+          }
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -91,7 +95,8 @@ export function PaymentMethodsList({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium">
-                      {paymentMethod.brand} •••• {paymentMethod.last4}
+                      {paymentMethod.brand || "Unknown"} ••••{" "}
+                      {paymentMethod.last4}
                     </span>
                     {paymentMethod.isDefault && (
                       <Badge variant="secondary" className="text-xs">
@@ -101,7 +106,8 @@ export function PaymentMethodsList({
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {paymentMethod.cardholderName} • Expires {paymentMethod.expiryDate}
+                    {paymentMethod.cardholderName} • Expires{" "}
+                    {paymentMethod.expiryDate}
                   </p>
                 </div>
               </div>
@@ -109,7 +115,11 @@ export function PaymentMethodsList({
               {!showSelection && (
                 <div className="flex items-center gap-2">
                   {!paymentMethod.isDefault && (
-                    <Button variant="ghost" size="sm" onClick={() => handleSetDefault(paymentMethod.id)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSetDefault(paymentMethod.id)}
+                    >
                       Set Default
                     </Button>
                   )}
@@ -128,5 +138,5 @@ export function PaymentMethodsList({
         </Card>
       ))}
     </div>
-  )
+  );
 }
