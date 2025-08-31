@@ -1,11 +1,14 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { useCreateDiscountMutation, useUpdateDiscountMutation } from "@/features/discounts/api"
-import type { Discount } from "@/features/discounts/types"
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  useCreateDiscountMutation,
+  useUpdateDiscountMutation,
+} from "@/features/discounts/api";
+import type { Discount } from "@/features/discounts/types";
 import {
   Dialog,
   DialogContent,
@@ -13,15 +16,21 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
-import { Loader2 } from "lucide-react"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 const discountSchema = z.object({
   code: z.string().min(1, "Discount code is required").toUpperCase(),
@@ -32,20 +41,26 @@ const discountSchema = z.object({
   maxUses: z.number().min(1).optional(),
   expiresAt: z.string().optional(),
   isActive: z.boolean(),
-})
+});
 
-type DiscountFormData = z.infer<typeof discountSchema>
+type DiscountFormData = z.infer<typeof discountSchema>;
 
 interface DiscountModalProps {
-  discount: Discount | null
-  isOpen: boolean
-  onClose: () => void
+  discount: Discount | null;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export function DiscountModal({ discount, isOpen, onClose }: DiscountModalProps) {
-  const [createDiscount, { isLoading: isCreating }] = useCreateDiscountMutation()
-  const [updateDiscount, { isLoading: isUpdating }] = useUpdateDiscountMutation()
-  const { toast } = useToast()
+export function DiscountModal({
+  discount,
+  isOpen,
+  onClose,
+}: DiscountModalProps) {
+  const [createDiscount, { isLoading: isCreating }] =
+    useCreateDiscountMutation();
+  const [updateDiscount, { isLoading: isUpdating }] =
+    useUpdateDiscountMutation();
+  const { toast } = useToast();
 
   const {
     register,
@@ -66,11 +81,11 @@ export function DiscountModal({ discount, isOpen, onClose }: DiscountModalProps)
       expiresAt: "",
       isActive: true,
     },
-  })
+  });
 
-  const isEditing = !!discount
-  const isLoading = isCreating || isUpdating
-  const discountType = watch("type")
+  const isEditing = !!discount;
+  const isLoading = isCreating || isUpdating;
+  const discountType = watch("type");
 
   useEffect(() => {
     if (discount) {
@@ -83,7 +98,7 @@ export function DiscountModal({ discount, isOpen, onClose }: DiscountModalProps)
         maxUses: discount.maxUses,
         expiresAt: discount.expiresAt ? discount.expiresAt.split("T")[0] : "",
         isActive: discount.isActive,
-      })
+      });
     } else {
       reset({
         code: "",
@@ -94,9 +109,9 @@ export function DiscountModal({ discount, isOpen, onClose }: DiscountModalProps)
         maxUses: undefined,
         expiresAt: "",
         isActive: true,
-      })
+      });
     }
-  }, [discount, reset])
+  }, [discount, reset]);
 
   const onSubmit = async (data: DiscountFormData) => {
     try {
@@ -105,39 +120,41 @@ export function DiscountModal({ discount, isOpen, onClose }: DiscountModalProps)
         minOrderAmount: data.minOrderAmount || undefined,
         maxUses: data.maxUses || undefined,
         expiresAt: data.expiresAt || undefined,
-      }
+      };
 
       if (isEditing) {
         await updateDiscount({
           id: discount.id,
           updates: payload,
-        }).unwrap()
+        }).unwrap();
         toast({
           title: "Discount updated",
           description: "Discount has been updated successfully.",
-        })
+        });
       } else {
-        await createDiscount(payload).unwrap()
+        await createDiscount(payload).unwrap();
         toast({
           title: "Discount created",
           description: "Discount has been created successfully.",
-        })
+        });
       }
-      onClose()
+      onClose();
     } catch (error) {
       toast({
         title: "Error",
         description: `Failed to ${isEditing ? "update" : "create"} discount.`,
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Discount" : "Create New Discount"}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Edit Discount" : "Create New Discount"}
+          </DialogTitle>
           <DialogDescription>
             {isEditing
               ? "Update the discount information below."
@@ -149,13 +166,27 @@ export function DiscountModal({ discount, isOpen, onClose }: DiscountModalProps)
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="code">Discount Code</Label>
-              <Input id="code" {...register("code")} placeholder="SAVE20" className="font-mono" />
-              {errors.code && <p className="text-sm text-destructive">{errors.code.message}</p>}
+              <Input
+                id="code"
+                {...register("code")}
+                placeholder="SAVE20"
+                className="font-mono"
+              />
+              {errors.code && (
+                <p className="text-sm text-destructive">
+                  {errors.code.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="type">Discount Type</Label>
-              <Select value={watch("type")} onValueChange={(value: "PERCENTAGE" | "FIXED") => setValue("type", value)}>
+              <Select
+                value={watch("type")}
+                onValueChange={(value: "PERCENTAGE" | "FIXED") =>
+                  setValue("type", value)
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -170,12 +201,20 @@ export function DiscountModal({ discount, isOpen, onClose }: DiscountModalProps)
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea id="description" {...register("description")} rows={2} />
-            {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
+            {errors.description && (
+              <p className="text-sm text-destructive">
+                {errors.description.message}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="value">{discountType === "PERCENTAGE" ? "Percentage (%)" : "Amount ($)"}</Label>
+              <Label htmlFor="value">
+                {discountType === "PERCENTAGE"
+                  ? "Percentage (%)"
+                  : "Amount ($)"}
+              </Label>
               <Input
                 id="value"
                 type="number"
@@ -183,11 +222,15 @@ export function DiscountModal({ discount, isOpen, onClose }: DiscountModalProps)
                 max={discountType === "PERCENTAGE" ? "100" : undefined}
                 {...register("value", { valueAsNumber: true })}
               />
-              {errors.value && <p className="text-sm text-destructive">{errors.value.message}</p>}
+              {errors.value && (
+                <p className="text-sm text-destructive">
+                  {errors.value.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="minOrderAmount">Min Order Amount ($)</Label>
+              <Label htmlFor="minOrderAmount">Min Order Amount (FCFA)</Label>
               <Input
                 id="minOrderAmount"
                 type="number"
@@ -235,5 +278,5 @@ export function DiscountModal({ discount, isOpen, onClose }: DiscountModalProps)
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -86,3 +86,6 @@ export function RoleSelect() {
     </div>
   );
 }
+
+// Alias for backward compatibility
+export const UserSelect = RoleSelect;

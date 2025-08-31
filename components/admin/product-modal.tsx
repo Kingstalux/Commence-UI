@@ -1,11 +1,14 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { useCreateProductMutation, useUpdateProductMutation } from "@/features/products/api"
-import type { Product } from "@/features/products/types"
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  useCreateProductMutation,
+  useUpdateProductMutation,
+} from "@/features/products/api";
+import type { Product } from "@/features/products/types";
 import {
   Dialog,
   DialogContent,
@@ -13,15 +16,21 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useToast } from "@/hooks/use-toast"
-import { Loader2 } from "lucide-react"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 const productSchema = z.object({
   title: z.string().min(1, "Product name is required"),
@@ -31,22 +40,31 @@ const productSchema = z.object({
   imageUrl: z.string().url().optional().or(z.literal("")),
   discountPercentage: z.number().min(0).max(100).optional(),
   inStock: z.boolean(),
-})
+});
 
-type ProductFormData = z.infer<typeof productSchema>
+type ProductFormData = z.infer<typeof productSchema>;
 
 interface ProductModalProps {
-  product: Product | null
-  isOpen: boolean
-  onClose: () => void
+  product: Product | null;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-const categories = ["Electronics", "Clothing", "Home & Garden", "Sports", "Books", "Beauty", "Toys", "Automotive"]
+const categories = [
+  "Electronics",
+  "Clothing",
+  "Home & Garden",
+  "Sports",
+  "Books",
+  "Beauty",
+  "Toys",
+  "Automotive",
+];
 
 export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
-  const [createProduct, { isLoading: isCreating }] = useCreateProductMutation()
-  const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation()
-  const { toast } = useToast()
+  const [createProduct, { isLoading: isCreating }] = useCreateProductMutation();
+  const [updateProduct, { isLoading: isUpdating }] = useUpdateProductMutation();
+  const { toast } = useToast();
 
   const {
     register,
@@ -66,10 +84,10 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
       discountPercentage: 0,
       inStock: true,
     },
-  })
+  });
 
-  const isEditing = !!product
-  const isLoading = isCreating || isUpdating
+  const isEditing = !!product;
+  const isLoading = isCreating || isUpdating;
 
   useEffect(() => {
     if (product) {
@@ -81,7 +99,7 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
         imageUrl: product.imageUrl || "",
         discountPercentage: product.discountPercentage || 0,
         inStock: product.inStock,
-      })
+      });
     } else {
       reset({
         title: "",
@@ -91,9 +109,9 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
         imageUrl: "",
         discountPercentage: 0,
         inStock: true,
-      })
+      });
     }
-  }, [product, reset])
+  }, [product, reset]);
 
   const onSubmit = async (data: ProductFormData) => {
     try {
@@ -102,42 +120,48 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
           id: product.id,
           updates: {
             ...data,
+            name: data.title, // Map title to required name field
             imageUrl: data.imageUrl || undefined,
             discountPercentage: data.discountPercentage || undefined,
           },
-        }).unwrap()
+        }).unwrap();
         toast({
           title: "Product updated",
           description: "Product has been updated successfully.",
-        })
+        });
       } else {
         await createProduct({
           ...data,
+          name: data.title, // Map title to required name field
           imageUrl: data.imageUrl || undefined,
           discountPercentage: data.discountPercentage || undefined,
-        }).unwrap()
+        }).unwrap();
         toast({
           title: "Product created",
           description: "Product has been created successfully.",
-        })
+        });
       }
-      onClose()
+      onClose();
     } catch (error) {
       toast({
         title: "Error",
         description: `Failed to ${isEditing ? "update" : "create"} product.`,
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Product" : "Create New Product"}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Edit Product" : "Create New Product"}
+          </DialogTitle>
           <DialogDescription>
-            {isEditing ? "Update the product information below." : "Fill in the details to create a new product."}
+            {isEditing
+              ? "Update the product information below."
+              : "Fill in the details to create a new product."}
           </DialogDescription>
         </DialogHeader>
 
@@ -146,12 +170,19 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
             <div className="space-y-2">
               <Label htmlFor="title">Product Name</Label>
               <Input id="title" {...register("title")} />
-              {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
+              {errors.title && (
+                <p className="text-sm text-destructive">
+                  {errors.title.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Select value={watch("category")} onValueChange={(value) => setValue("category", value)}>
+              <Select
+                value={watch("category")}
+                onValueChange={(value) => setValue("category", value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -163,21 +194,38 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.category && <p className="text-sm text-destructive">{errors.category.message}</p>}
+              {errors.category && (
+                <p className="text-sm text-destructive">
+                  {errors.category.message}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea id="description" {...register("description")} rows={3} />
-            {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
+            {errors.description && (
+              <p className="text-sm text-destructive">
+                {errors.description.message}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Price ($)</Label>
-              <Input id="price" type="number" step="0.01" {...register("price", { valueAsNumber: true })} />
-              {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
+              <Label htmlFor="price">Price (FCFA)</Label>
+              <Input
+                id="price"
+                type="number"
+                step="0.01"
+                {...register("price", { valueAsNumber: true })}
+              />
+              {errors.price && (
+                <p className="text-sm text-destructive">
+                  {errors.price.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -190,7 +238,9 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
                 {...register("discountPercentage", { valueAsNumber: true })}
               />
               {errors.discountPercentage && (
-                <p className="text-sm text-destructive">{errors.discountPercentage.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.discountPercentage.message}
+                </p>
               )}
             </div>
           </div>
@@ -198,7 +248,11 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
           <div className="space-y-2">
             <Label htmlFor="imageUrl">Image URL (optional)</Label>
             <Input id="imageUrl" type="url" {...register("imageUrl")} />
-            {errors.imageUrl && <p className="text-sm text-destructive">{errors.imageUrl.message}</p>}
+            {errors.imageUrl && (
+              <p className="text-sm text-destructive">
+                {errors.imageUrl.message}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center space-x-2">
@@ -222,5 +276,5 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

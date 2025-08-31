@@ -31,7 +31,13 @@ export const productsApi = baseApi.injectEndpoints({
           updatedAt: product.updatedAt || new Date().toISOString(),
         }));
       },
-      providesTags: ["Product"],
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: "Product" as const, id })),
+              { type: "Product" as const, id: "LIST" },
+            ]
+          : [{ type: "Product" as const, id: "LIST" }],
     }),
     getProduct: builder.query<Product, string>({
       query: (id) => `products/${id}`,
@@ -53,7 +59,13 @@ export const productsApi = baseApi.injectEndpoints({
           updatedAt: product.updatedAt || new Date().toISOString(),
         }));
       },
-      providesTags: ["Product"],
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: "Product" as const, id })),
+              { type: "Product" as const, id: "LIST" },
+            ]
+          : [{ type: "Product" as const, id: "LIST" }],
     }),
     getCategories: builder.query<string[], void>({
       query: () => "products/categories",
@@ -72,7 +84,13 @@ export const productsApi = baseApi.injectEndpoints({
           updatedAt: product.updatedAt || new Date().toISOString(),
         }));
       },
-      providesTags: ["Product"],
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: "Product" as const, id })),
+              { type: "Product" as const, id: "LIST" },
+            ]
+          : [{ type: "Product" as const, id: "LIST" }],
     }),
     // Admin endpoints for product management
     createProduct: builder.mutation<Product, Omit<Product, "id">>({
@@ -87,7 +105,7 @@ export const productsApi = baseApi.injectEndpoints({
         createdAt: response.createdAt || new Date().toISOString(),
         updatedAt: response.updatedAt || new Date().toISOString(),
       }),
-      invalidatesTags: ["Product"],
+      invalidatesTags: [{ type: "Product", id: "LIST" }, "Product"],
     }),
     updateProduct: builder.mutation<
       Product,
@@ -104,14 +122,22 @@ export const productsApi = baseApi.injectEndpoints({
         createdAt: response.createdAt || new Date().toISOString(),
         updatedAt: response.updatedAt || new Date().toISOString(),
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "Product", id }],
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Product", id },
+        { type: "Product", id: "LIST" },
+        "Product",
+      ],
     }),
     deleteProduct: builder.mutation<void, string>({
       query: (id) => ({
         url: `admin/products/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [{ type: "Product", id }],
+      invalidatesTags: (result, error, id) => [
+        { type: "Product", id },
+        { type: "Product", id: "LIST" },
+        "Product",
+      ],
     }),
   }),
 });
