@@ -36,6 +36,11 @@ export function RoleSelect() {
     (state: RootState) => state.auth.user
   );
 
+  // Initialize useState BEFORE any conditional returns
+  const [selectedRole, setSelectedRole] = useState(
+    currentUserFromState?.role || currentUser?.role || "USER"
+  );
+
   // Only show role switcher if the user's original role is ADMIN
   const canSwitchRoles =
     currentUser?.role === "ADMIN" || currentUserFromState?.role === "ADMIN";
@@ -44,12 +49,8 @@ export function RoleSelect() {
     return null;
   }
 
-  const [selectedRole, setSelectedRole] = useState(
-    currentUserFromState?.role || currentUser?.role || "USER"
-  );
-
   const handleRoleChange = (roleId: string) => {
-    setSelectedRole(roleId);
+    setSelectedRole(roleId as "USER" | "ADMIN");
 
     if (currentUser) {
       // Update user with new role
