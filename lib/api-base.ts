@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { TokenStorage } from "./token-storage";
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:3100/api",
+  baseUrl: process.env.NEXT_PUBLIC_GATEWAY_URL || "http://10.0.0.2:3100/api",
   credentials: "include",
   prepareHeaders: (headers, { getState }) => {
     headers.set("Content-Type", "application/json");

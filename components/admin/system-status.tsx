@@ -47,7 +47,7 @@ export function SystemStatus() {
     const startTime = Date.now();
     try {
       const baseUrl =
-        process.env.NEXT_PUBLIC_GATEWAY_URL || "http://localhost:3100";
+        process.env.NEXT_PUBLIC_GATEWAY_URL || "http://10.0.0.2:3100";
 
       // Prepare headers for authentication
       const headers: HeadersInit = {
